@@ -242,3 +242,8 @@ app_license = "mit"
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+scheduler_events = {
+    "hourly": [
+        "grx_m365.api.scheduler.sync_enabled_calendar_accounts"
+    ]
+}

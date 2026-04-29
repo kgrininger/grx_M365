@@ -1,0 +1,140 @@
+{
+  "doctype": "DocType",
+  "name": "M365 Calendar Account",
+  "module": "GRX M365",
+  "custom": 0,
+  "editable_grid": 1,
+  "autoname": "format:M365-CAL-{#####}",
+  "title_field": "m365_email",
+  "fields": [
+    {
+      "fieldname": "user",
+      "fieldtype": "Link",
+      "label": "User",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "enabled",
+      "fieldtype": "Check",
+      "label": "Enabled",
+      "default": "1"
+    },
+    {
+      "fieldname": "m365_email",
+      "fieldtype": "Data",
+      "label": "M365 Email"
+    },
+    {
+      "fieldname": "display_name",
+      "fieldtype": "Data",
+      "label": "Display Name"
+    },
+
+    {
+      "fieldname": "calendar_section",
+      "fieldtype": "Section Break",
+      "label": "Calendar"
+    },
+    {
+      "fieldname": "calendar_id",
+      "fieldtype": "Data",
+      "label": "Calendar ID",
+      "default": "primary"
+    },
+    {
+      "fieldname": "calendar_name",
+      "fieldtype": "Data",
+      "label": "Calendar Name"
+    },
+    {
+    "fieldname": "target_user",
+    "fieldtype": "Link",
+    "label": "Target User",
+    "options": "User",
+    "default": "__user"
+    },
+    {
+      "fieldname": "calendar_usage",
+      "fieldtype": "Select",
+      "label": "Calendar Usage",
+      "options": "Personal\nShared\nTeam\nResource",
+      "default": "Personal"
+    },
+    {
+      "fieldname": "show_in_office_hub",
+      "fieldtype": "Check",
+      "label": "Show in Office Hub",
+      "default": "1"
+    },
+
+    {
+      "fieldname": "token_section",
+      "fieldtype": "Section Break",
+      "label": "OAuth Tokens"
+    },
+    {
+      "fieldname": "access_token",
+      "fieldtype": "Password",
+      "label": "Access Token"
+    },
+    {
+      "fieldname": "refresh_token",
+      "fieldtype": "Password",
+      "label": "Refresh Token"
+    },
+    {
+      "fieldname": "token_expires_at",
+      "fieldtype": "Datetime",
+      "label": "Token Expires At"
+    },
+    {
+      "fieldname": "scope",
+      "fieldtype": "Small Text",
+      "label": "Scope"
+    },
+
+    {
+      "fieldname": "sync_section",
+      "fieldtype": "Section Break",
+      "label": "Sync"
+    },
+    {
+      "fieldname": "pull_enabled",
+      "fieldtype": "Check",
+      "label": "Pull Enabled",
+      "default": "1"
+    },
+    {
+      "fieldname": "last_sync_at",
+      "fieldtype": "Datetime",
+      "label": "Last Sync At"
+    },
+    {
+      "fieldname": "last_success_at",
+      "fieldtype": "Datetime",
+      "label": "Last Success At"
+    },
+    {
+      "fieldname": "last_error",
+      "fieldtype": "Small Text",
+      "label": "Last Error"
+    },
+    {
+      "fieldname": "sync_status",
+      "fieldtype": "Select",
+      "label": "Sync Status",
+      "options": "Never Synced\nSuccess\nError\nDisabled",
+      "default": "Never Synced"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1
+    }
+  ]
+}

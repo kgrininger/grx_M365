@@ -1,0 +1,22 @@
+{
+  "doctype": "DocType",
+  "name": "M365 Settings",
+  "module": "GRX M365",
+  "issingle": 1,
+  "custom": 0,
+  "editable_grid": 1,
+  "fields": [
+    {"fieldname": "enabled", "fieldtype": "Check", "label": "Enabled", "default": "0"},
+    {"fieldname": "tenant_id", "fieldtype": "Data", "label": "Tenant ID"},
+    {"fieldname": "client_id", "fieldtype": "Data", "label": "Client ID"},
+    {"fieldname": "client_secret", "fieldtype": "Password", "label": "Client Secret"},
+    {"fieldname": "redirect_uri", "fieldtype": "Data", "label": "Redirect URI"},
+    {"fieldname": "default_days_past", "fieldtype": "Int", "label": "Default Days Past", "default": "30"},
+    {"fieldname": "default_days_future", "fieldtype": "Int", "label": "Default Days Future", "default": "90"},
+    {"fieldname": "sync_interval_minutes", "fieldtype": "Int", "label": "Sync Interval Minutes", "default": "60"},
+    {"fieldname": "debug_enabled", "fieldtype": "Check", "label": "Debug Enabled", "default": "0"}
+  ],
+  "permissions": [
+    {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1}
+  ]
+}

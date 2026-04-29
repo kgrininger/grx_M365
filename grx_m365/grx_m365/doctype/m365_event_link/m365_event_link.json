@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "autoname": "format:M365-EVT-{#####}",
+ "creation": "2026-04-28 10:25:00.228541",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "calendar_account",
+  "frappe_event",
+  "m365_section",
+  "m365_event_id",
+  "m365_ical_uid",
+  "m365_change_key",
+  "m365_web_link",
+  "event_section",
+  "subject",
+  "start_time",
+  "end_time",
+  "last_modified_datetime",
+  "sync_section",
+  "sync_hash",
+  "is_cancelled",
+  "last_synced_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "calendar_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Calendar Account",
+   "options": "M365 Calendar Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "frappe_event",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Frappe Event",
+   "options": "Event",
+   "reqd": 1
+  },
+  {
+   "fieldname": "m365_section",
+   "fieldtype": "Section Break",
+   "label": "Microsoft 365 Event"
+  },
+  {
+   "fieldname": "m365_event_id",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "M365 Event ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "m365_ical_uid",
+   "fieldtype": "Small Text",
+   "label": "M365 iCal UID"
+  },
+  {
+   "fieldname": "m365_change_key",
+   "fieldtype": "Small Text",
+   "label": "M365 Change Key"
+  },
+  {
+   "fieldname": "m365_web_link",
+   "fieldtype": "Text",
+   "label": "M365 Web Link"
+  },
+  {
+   "fieldname": "event_section",
+   "fieldtype": "Section Break",
+   "label": "Event Snapshot"
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Datetime",
+   "label": "Start Time"
+  },
+  {
+   "fieldname": "end_time",
+   "fieldtype": "Datetime",
+   "label": "End Time"
+  },
+  {
+   "fieldname": "last_modified_datetime",
+   "fieldtype": "Datetime",
+   "label": "Last Modified Datetime"
+  },
+  {
+   "fieldname": "sync_section",
+   "fieldtype": "Section Break",
+   "label": "Sync"
+  },
+  {
+   "fieldname": "sync_hash",
+   "fieldtype": "Data",
+   "label": "Sync Hash"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_cancelled",
+   "fieldtype": "Check",
+   "label": "Is Cancelled"
+  },
+  {
+   "fieldname": "last_synced_at",
+   "fieldtype": "Datetime",
+   "label": "Last Synced At"
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-28 10:42:36.077250",
+ "modified_by": "klaus@grininger.at",
+ "module": "Grx M365",
+ "name": "M365 Event Link",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "subject"
+}

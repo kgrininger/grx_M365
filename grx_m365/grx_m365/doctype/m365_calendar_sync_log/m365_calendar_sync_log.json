@@ -1,0 +1,47 @@
+{
+  "doctype": "DocType",
+  "name": "M365 Calendar Sync Log",
+  "module": "GRX M365",
+  "custom": 0,
+  "editable_grid": 1,
+  "autoname": "format:M365-SYNC-{#####}",
+  "title_field": "status",
+  "fields": [
+    {"fieldname": "calendar_account", "fieldtype": "Link", "label": "Calendar Account", "options": "M365 Calendar Account", "reqd": 1},
+    {"fieldname": "sync_started_at", "fieldtype": "Datetime", "label": "Sync Started At"},
+    {"fieldname": "sync_finished_at", "fieldtype": "Datetime", "label": "Sync Finished At"},
+
+    {"fieldname": "status_section", "fieldtype": "Section Break", "label": "Status"},
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Running\nSuccess\nError",
+      "default": "Running"
+    },
+    {
+      "fieldname": "direction",
+      "fieldtype": "Select",
+      "label": "Direction",
+      "options": "Pull",
+      "default": "Pull"
+    },
+
+    {"fieldname": "range_section", "fieldtype": "Section Break", "label": "Range"},
+    {"fieldname": "range_start", "fieldtype": "Datetime", "label": "Range Start"},
+    {"fieldname": "range_end", "fieldtype": "Datetime", "label": "Range End"},
+
+    {"fieldname": "counter_section", "fieldtype": "Section Break", "label": "Counters"},
+    {"fieldname": "events_seen", "fieldtype": "Int", "label": "Events Seen", "default": "0"},
+    {"fieldname": "events_created", "fieldtype": "Int", "label": "Events Created", "default": "0"},
+    {"fieldname": "events_updated", "fieldtype": "Int", "label": "Events Updated", "default": "0"},
+    {"fieldname": "events_skipped", "fieldtype": "Int", "label": "Events Skipped", "default": "0"},
+    {"fieldname": "events_cancelled", "fieldtype": "Int", "label": "Events Cancelled", "default": "0"},
+
+    {"fieldname": "error_message", "fieldtype": "Small Text", "label": "Error Message"},
+    {"fieldname": "details_json", "fieldtype": "Code", "label": "Details JSON", "options": "JSON"}
+  ],
+  "permissions": [
+    {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1}
+  ]
+}
