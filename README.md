@@ -95,7 +95,7 @@ You can install this app using the [bench](https://github.com/frappe/bench) CLI:
 
 ```bash
 cd $PATH_TO_YOUR_BENCH
-bench get-app https://github.com/YOURUSER/grx_m365.git --branch develop
+bench get-app https://github.com/kgrininger/grx_m365.git --branch develop
 bench --site yoursite install-app grx_m365
 ```
 
