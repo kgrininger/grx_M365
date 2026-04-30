@@ -5,7 +5,7 @@ import requests
 import frappe
 from frappe.utils import now_datetime, add_to_date, get_datetime
 
-from grx_m365.api.auth import AUTHORITY_BASE, SCOPES
+from grx_m365.api.auth import AUTHORITY_BASE, get_scopes
 
 
 GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0"
@@ -48,7 +48,9 @@ def sync_account(account):
     }
 
     try:
-        access_token = get_valid_access_token(account_doc)
+        m365_account = get_m365_account_for_calendar(account_doc)
+        access_token = get_valid_access_token(m365_account)
+
         events = fetch_calendar_view(account_doc, access_token, range_start, range_end)
 
         index = 0
@@ -116,21 +118,31 @@ def sync_account(account):
         frappe.db.commit()
         frappe.throw(error_text)
 
+def get_m365_account_for_calendar(calendar_account_doc):
+    if not calendar_account_doc.m365_account:
+        frappe.throw("M365 Calendar Account has no linked M365 Account.")
 
-def get_valid_access_token(account_doc):
-    expires_at = get_datetime(account_doc.token_expires_at) if account_doc.token_expires_at else None
+    m365_account = frappe.get_doc("M365 Account", calendar_account_doc.m365_account)
+
+    if not m365_account.enabled:
+        frappe.throw("Linked M365 Account is disabled.")
+
+    return m365_account
+
+def get_valid_access_token(m365_account_doc):
+    expires_at = get_datetime(m365_account_doc.token_expires_at) if m365_account_doc.token_expires_at else None
 
     if expires_at and expires_at > now_datetime():
-        token = account_doc.get_password("access_token")
+        token = m365_account_doc.get_password("access_token")
         if token:
             return token
 
-    return refresh_access_token(account_doc)
+    return refresh_access_token(m365_account_doc)
 
 
-def refresh_access_token(account_doc):
+def refresh_access_token(m365_account_doc):
     settings = frappe.get_single("M365 Settings")
-    refresh_token = account_doc.get_password("refresh_token")
+    refresh_token = m365_account_doc.get_password("refresh_token")
 
     if not refresh_token:
         frappe.throw("Missing Microsoft refresh token. Please reconnect this account.")
@@ -143,7 +155,7 @@ def refresh_access_token(account_doc):
         "grant_type": "refresh_token",
         "refresh_token": refresh_token,
         "redirect_uri": settings.redirect_uri,
-        "scope": " ".join(SCOPES),
+        "scope": " ".join(get_scopes())
     }
 
     response = requests.post(token_url, data=data, timeout=30)
@@ -153,16 +165,16 @@ def refresh_access_token(account_doc):
 
     token_data = response.json()
 
-    account_doc.access_token = token_data.get("access_token")
-    account_doc.refresh_token = token_data.get("refresh_token") or refresh_token
-    account_doc.scope = token_data.get("scope") or account_doc.scope
+    m365_account_doc.access_token = token_data.get("access_token")
+    m365_account_doc.refresh_token = token_data.get("refresh_token") or refresh_token
+    m365_account_doc.scope = token_data.get("scope") or m365_account_doc.scope
 
     expires_in = int(token_data.get("expires_in") or 3600)
-    account_doc.token_expires_at = add_to_date(now_datetime(), seconds=expires_in - 120)
-    account_doc.save(ignore_permissions=True)
+    m365_account_doc.token_expires_at = add_to_date(now_datetime(), seconds=expires_in - 120)
+    m365_account_doc.save(ignore_permissions=True)
     frappe.db.commit()
 
-    return account_doc.get_password("access_token")
+    return m365_account_doc.get_password("access_token")
 
 
 def fetch_calendar_view(account_doc, access_token, range_start, range_end):
@@ -243,6 +255,8 @@ def upsert_outlook_event(account_doc, outlook_event):
         update_frappe_event(frappe_event, outlook_event, account_doc)
         frappe_event.save(ignore_permissions=True)
 
+        resolve_grx_event_context(frappe_event.name)
+
         update_link_doc(link_doc, outlook_event, event_hash)
         link_doc.save(ignore_permissions=True)
 
@@ -252,6 +266,8 @@ def upsert_outlook_event(account_doc, outlook_event):
     update_frappe_event(frappe_event, outlook_event, account_doc)
     frappe_event.insert(ignore_permissions=True)
 
+    resolve_grx_event_context(frappe_event.name)
+
     link_doc = frappe.new_doc("M365 Event Link")
     link_doc.calendar_account = account_doc.name
     link_doc.frappe_event = frappe_event.name
@@ -260,16 +276,23 @@ def upsert_outlook_event(account_doc, outlook_event):
 
     return "created"
 
+
+def resolve_grx_event_context(event_name):
+    if "grx_fieldservice" not in frappe.get_installed_apps():
+        return
+
+    try:
+        frappe.get_attr(
+            "grx_fieldservice.api.event_context.resolve_event_context"
+        )(event_name)
+    except Exception:
+        frappe.log_error(
+            title="M365 Event context resolve failed",
+            message=frappe.get_traceback(),
+        )
+
+
 def detect_removed_events(account_doc, current_events, range_start, range_end):
-    """
-    Detects M365 events that were previously synced but are no longer returned
-    by Microsoft Graph within the current sync window.
-
-    Important:
-    Only links inside the current sync range are checked.
-    Old events outside the range are never touched.
-    """
-
     current_ids = []
 
     index = 0
@@ -288,12 +311,7 @@ def detect_removed_events(account_doc, current_events, range_start, range_end):
             "start_time": [">=", range_start],
             "end_time": ["<=", range_end],
         },
-        fields=[
-            "name",
-            "m365_event_id",
-            "frappe_event",
-            "subject",
-        ],
+        fields=["name", "m365_event_id", "frappe_event", "subject"],
     )
 
     removed_count = 0
@@ -323,7 +341,6 @@ def mark_removed_link(link):
         frappe_event = frappe.get_doc("Event", frappe_event_name)
 
         subject = frappe_event.subject or ""
-
         if not subject.startswith("[REMOVED]"):
             frappe_event.subject = "[REMOVED] " + subject
 
@@ -331,6 +348,7 @@ def mark_removed_link(link):
             frappe_event.status = "Closed"
 
         frappe_event.save(ignore_permissions=True)
+
 
 def update_frappe_event(frappe_event, outlook_event, account_doc):
     subject = outlook_event.get("subject") or "(No subject)"
@@ -342,13 +360,16 @@ def update_frappe_event(frappe_event, outlook_event, account_doc):
     location = location_data.get("displayName") or ""
 
     description = build_description(outlook_event)
+    target_user = account_doc.get("target_user")
 
-    target_user = account_doc.get("target_user") or account_doc.user
+    if not target_user and account_doc.m365_account:
+        target_user = frappe.db.get_value("M365 Account", account_doc.m365_account, "user")
 
     frappe_event.subject = subject
     frappe_event.starts_on = start_dt
     frappe_event.ends_on = end_dt
     frappe_event.event_type = "Private"
+
     if frappe_event.is_new():
         frappe_event.owner = target_user
 
@@ -362,24 +383,19 @@ def update_frappe_event(frappe_event, outlook_event, account_doc):
 
     if frappe_event.meta.has_field("all_day"):
         frappe_event.all_day = 1 if outlook_event.get("isAllDay") else 0
-    
+
     sync_event_participants(frappe_event, outlook_event, account_doc)
 
+
 def sync_event_participants(frappe_event, outlook_event, account_doc):
-    """
-    Adds Frappe Event Participants based on:
-    1. target_user / account user
-    2. organizer if it matches a Frappe User
-    3. attendees if they match Frappe Users
-
-    Unknown external attendees are currently ignored for Event Participants.
-    They still remain visible in the imported description if needed later.
-    """
-
     if not frappe_event.meta.has_field("event_participants"):
         return
 
-    target_user = account_doc.get("target_user") or account_doc.user
+    target_user = account_doc.get("target_user")
+
+    if not target_user and account_doc.m365_account:
+        target_user = frappe.db.get_value("M365 Account", account_doc.m365_account, "user")
+
     users = []
 
     add_user_to_list(users, target_user)
@@ -440,6 +456,7 @@ def find_user_by_email(email):
         return None
 
     return frappe.db.get_value("User", {"email": email}, "name")
+
 
 def update_link_doc(link_doc, outlook_event, event_hash):
     start_dt = parse_graph_datetime(outlook_event.get("start"))
@@ -509,9 +526,10 @@ def build_description(outlook_event):
     body_preview = outlook_event.get("bodyPreview") or ""
     web_link = outlook_event.get("webLink") or ""
 
-    lines = []
-    lines.append("Imported from Microsoft 365 Outlook Calendar.")
-    lines.append("")
+    lines = [
+        "Imported from Microsoft 365 Outlook Calendar.",
+        "",
+    ]
 
     if body_preview:
         lines.append(body_preview)

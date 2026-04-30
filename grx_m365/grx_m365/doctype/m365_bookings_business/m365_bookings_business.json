@@ -1,0 +1,102 @@
+{
+ "actions": [],
+ "autoname": "field:business_id",
+ "creation": "2026-04-30 16:21:50.909779",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "m365_account",
+  "enabled",
+  "business_id",
+  "display_name",
+  "auth_account",
+  "default_timezone",
+  "is_published",
+  "last_synced_at",
+  "raw_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "m365_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "M365 Account",
+   "options": "M365 Account",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "business_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Business ID",
+   "read_only": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "display_name",
+   "fieldtype": "Data",
+   "label": "Display Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "auth_account",
+   "fieldtype": "Link",
+   "label": "Auth Account",
+   "options": "M365 Calendar Account"
+  },
+  {
+   "default": "W. Europe Standard Time",
+   "fieldname": "default_timezone",
+   "fieldtype": "Data",
+   "label": "Default Timezone",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_published",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Is Published",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_synced_at",
+   "fieldtype": "Datetime",
+   "label": "Last Synced At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "raw_json",
+   "fieldtype": "Long Text",
+   "label": "Raw JSON",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-30 16:31:13.420139",
+ "modified_by": "klaus@grininger.at",
+ "module": "Grx M365",
+ "name": "M365 Bookings Business",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

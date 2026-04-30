@@ -1,0 +1,88 @@
+{
+  "doctype": "DocType",
+  "name": "M365 Account",
+  "module": "GRX M365",
+  "custom": 0,
+  "editable_grid": 1,
+  "autoname": "format:M365-ACC-{#####}",
+  "title_field": "m365_email",
+  "fields": [
+    {
+      "fieldname": "enabled",
+      "fieldtype": "Check",
+      "label": "Enabled",
+      "default": "1"
+    },
+    {
+      "fieldname": "user",
+      "fieldtype": "Link",
+      "label": "User",
+      "options": "User",
+      "reqd": 1
+    },
+    {
+      "fieldname": "m365_email",
+      "fieldtype": "Data",
+      "label": "M365 Email",
+      "reqd": 1
+    },
+    {
+      "fieldname": "display_name",
+      "fieldtype": "Data",
+      "label": "Display Name"
+    },
+    {
+      "fieldname": "account_status",
+      "fieldtype": "Select",
+      "label": "Account Status",
+      "options": "Connected\nDisconnected\nError",
+      "default": "Connected"
+    },
+
+    {
+      "fieldname": "token_section",
+      "fieldtype": "Section Break",
+      "label": "OAuth Tokens"
+    },
+    {
+      "fieldname": "access_token",
+      "fieldtype": "Password",
+      "label": "Access Token"
+    },
+    {
+      "fieldname": "refresh_token",
+      "fieldtype": "Password",
+      "label": "Refresh Token"
+    },
+    {
+      "fieldname": "token_expires_at",
+      "fieldtype": "Datetime",
+      "label": "Token Expires At"
+    },
+    {
+      "fieldname": "scope",
+      "fieldtype": "Small Text",
+      "label": "Scope"
+    },
+
+    {
+      "fieldname": "debug_section",
+      "fieldtype": "Section Break",
+      "label": "Debug"
+    },
+    {
+      "fieldname": "last_error",
+      "fieldtype": "Small Text",
+      "label": "Last Error"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1
+    }
+  ]
+}

@@ -5,13 +5,13 @@
   "custom": 0,
   "editable_grid": 1,
   "autoname": "format:M365-CAL-{#####}",
-  "title_field": "m365_email",
+  "title_field": "calendar_name",
   "fields": [
     {
-      "fieldname": "user",
+      "fieldname": "m365_account",
       "fieldtype": "Link",
-      "label": "User",
-      "options": "User",
+      "label": "M365 Account",
+      "options": "M365 Account",
       "reqd": 1
     },
     {
@@ -20,17 +20,6 @@
       "label": "Enabled",
       "default": "1"
     },
-    {
-      "fieldname": "m365_email",
-      "fieldtype": "Data",
-      "label": "M365 Email"
-    },
-    {
-      "fieldname": "display_name",
-      "fieldtype": "Data",
-      "label": "Display Name"
-    },
-
     {
       "fieldname": "calendar_section",
       "fieldtype": "Section Break",
@@ -45,7 +34,8 @@
     {
       "fieldname": "calendar_name",
       "fieldtype": "Data",
-      "label": "Calendar Name"
+      "label": "Calendar Name",
+      "reqd": 1
     },
     {
     "fieldname": "target_user",
@@ -67,33 +57,6 @@
       "label": "Show in Office Hub",
       "default": "1"
     },
-
-    {
-      "fieldname": "token_section",
-      "fieldtype": "Section Break",
-      "label": "OAuth Tokens"
-    },
-    {
-      "fieldname": "access_token",
-      "fieldtype": "Password",
-      "label": "Access Token"
-    },
-    {
-      "fieldname": "refresh_token",
-      "fieldtype": "Password",
-      "label": "Refresh Token"
-    },
-    {
-      "fieldname": "token_expires_at",
-      "fieldtype": "Datetime",
-      "label": "Token Expires At"
-    },
-    {
-      "fieldname": "scope",
-      "fieldtype": "Small Text",
-      "label": "Scope"
-    },
-
     {
       "fieldname": "sync_section",
       "fieldtype": "Section Break",

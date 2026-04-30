@@ -1,111 +1,179 @@
+Production-ready Outlook calendar sync.
+Developer-ready Microsoft Bookings connector.
+
 # GRX M365
 
-Microsoft 365 Calendar integration for **Frappe / ERPNext**.
+> Modular Microsoft 365 integration for **Frappe / ERPNext**
 
-`grx_m365` connects Microsoft Outlook calendars with Frappe `Event` records using Microsoft Graph API.
+`grx_m365` connects Microsoft 365 services with Frappe using the official Microsoft Graph API.
 
----
+Supports:
 
-# Features
-
-## Current Version (MVP)
-
-✅ Microsoft 365 OAuth Login
-✅ Secure token storage
-✅ Automatic token refresh
-✅ Manual sync per calendar account
-✅ Scheduler / automatic sync
-✅ Outlook Calendar → Frappe Event sync
-✅ Create / Update / Skip logic
-✅ No duplicate events
-✅ Deleted Outlook events detected
-✅ Event participants from internal users
-✅ Multi-user capable
-✅ Shared calendar ready (Target User mapping)
+- Outlook Calendar Sync
+- Shared Calendars
+- Includes Microsoft Bookings API connector
+- Future Microsoft integrations (Contacts, Mail, Teams, SharePoint)
 
 ---
 
-# Architecture
+## Why GRX M365?
+
+Many Frappe / ERPNext users work in Microsoft environments.
+
+Existing integrations are often:
+
+- outdated
+- Exchange-only
+- limited
+- complex middleware solutions
+
+**GRX M365** focuses on practical Microsoft 365 integration for Frappe with minimal setup and direct Graph API usage.
+
+---
+
+## Features
+
+### Outlook Calendar
+
+- Microsoft OAuth Login
+- Secure token storage
+- Automatic token refresh
+- Manual sync
+- Scheduled sync
+- Outlook to Frappe Event sync
+- Create / Update / Skip logic
+- Duplicate prevention
+- Deleted event detection
+- Event participants mapping
+- Shared calendar support
+- Multi-user capable
+
+### Microsoft Bookings
+
+- Sync Bookings Businesses
+- Read services metadata
+- Staff APIs
+- Appointment creation
+- Appointment cancellation
+- Dynamic booking requirement detection
+- Multi-account ready
+
+---
+
+## Architecture
 
 ```text
-Microsoft Outlook Calendar
+Microsoft 365
+├── Outlook Calendar
+├── Microsoft Bookings
+└── Microsoft Graph API
         ↓
-Microsoft Graph API
+     grx_m365
         ↓
-grx_m365
-        ↓
-Frappe Event
+Frappe / ERPNext
 ```
+### Stability
+
+✅ Outlook Calendar: Production Ready  
+🟡 Bookings API: Beta / Integration Layer  
+🔵 Contacts / Mail / Teams: Planned
 
 ---
 
-# Included Doctypes
+## Included Doctypes
 
-## M365 Settings
+### M365 Settings
 
-Global Microsoft connection settings.
+Global Microsoft integration settings.
 
 Fields:
 
-* Tenant ID
-* Client ID
-* Client Secret
-* Redirect URI
-* Default Sync Window
-* Scheduler Settings
+- Tenant ID
+- Client ID
+- Client Secret
+- Redirect URI
+- Enabled modules
+- Scheduler settings
 
----
+### M365 Account
 
-## M365 Calendar Account
+Central OAuth-connected Microsoft account.
 
-One connected Microsoft calendar account.
+Stores:
+
+- Microsoft user identity
+- Access token
+- Refresh token
+- Granted scopes
+- Token expiry
+- Connection status
+
+### M365 Calendar Account
+
+Maps calendars into Frappe.
 
 Fields:
 
-* User
-* Target User
-* Calendar ID
-* Calendar Type
-* OAuth Tokens
-* Sync Status
+- Linked M365 Account
+- Calendar ID
+- Calendar Name
+- Target User
+- Usage Type: Personal, Shared, Team, Resource
+- Pull Sync status
 
----
+### M365 Bookings Business
 
-## M365 Event Link
+Synced Microsoft Bookings business.
 
-Maps Outlook Events to Frappe Events.
+Fields:
+
+- Linked M365 Account
+- Business ID
+- Display Name
+- Timezone
+- Enabled
+- Raw Microsoft payload for diagnostics
+
+### M365 Event Link
+
+Maps Outlook events to Frappe Events.
 
 Used for:
 
-* duplicate prevention
-* updates
-* deleted event detection
+- Duplicate prevention
+- Update tracking
+- Deleted event detection
+- Audit trail
 
----
-
-## M365 Calendar Sync Log
+### M365 Calendar Sync Log
 
 Sync history and diagnostics.
 
 ---
 
-# Installation
+Designed as modular connector layer:
+- Use standalone
+- Extend in custom apps
+- Integrate into GRX workflows
 
-You can install this app using the [bench](https://github.com/frappe/bench) CLI:
+## Installation
+
+Install via Bench CLI:
 
 ```bash
 cd $PATH_TO_YOUR_BENCH
+
 bench get-app https://github.com/kgrininger/grx_m365.git --branch develop
 bench --site yoursite install-app grx_m365
 ```
 
 ---
 
-# Setup
+## Setup
 
-## 1. Microsoft Entra App Registration
+### 1. Microsoft Entra App Registration
 
-Create an App Registration.
+Create an App Registration in Microsoft Entra.
 
 Redirect URI:
 
@@ -113,7 +181,11 @@ Redirect URI:
 https://yourdomain.com/api/method/grx_m365.api.auth.callback
 ```
 
-Permissions:
+### 2. API Permissions
+
+Scopes are requested dynamically depending on enabled modules.
+
+Calendar module:
 
 ```text
 User.Read
@@ -121,22 +193,31 @@ Calendars.Read
 offline_access
 ```
 
----
+Bookings module:
 
-## 2. Configure M365 Settings
+```text
+User.Read
+BookingsAppointment.ReadWrite.All
+offline_access
+```
+
+Admin consent may be required depending on your Microsoft tenant policy.
+
+### 3. Configure M365 Settings
 
 Enter:
 
-* Tenant ID
-* Client ID
-* Client Secret
-* Redirect URI
+- Tenant ID
+- Client ID
+- Client Secret
+- Redirect URI
 
-Enable integration.
+Then enable the desired modules:
 
----
+- Calendar
+- Bookings
 
-## 3. Connect User Account
+### 4. Connect Microsoft Account
 
 Open:
 
@@ -146,11 +227,17 @@ Open:
 
 Login with Microsoft.
 
+This creates or updates an `M365 Account`.
+
+If the Calendar module is enabled, a default `M365 Calendar Account` for the primary calendar is created automatically.
+
 ---
 
-# Sync
+## Usage
 
-## Manual Sync
+### Outlook Calendar Sync
+
+Manual sync:
 
 Open a calendar account and click:
 
@@ -158,17 +245,13 @@ Open a calendar account and click:
 Sync Outlook Calendar
 ```
 
-or call:
+Or call:
 
 ```text
 /api/method/grx_m365.api.calendar_pull.sync_account?account=M365-CAL-00001
 ```
 
-## Automatic Sync
-
-Scheduler supported.
-
-Example:
+Automatic sync:
 
 ```python
 scheduler_events = {
@@ -178,93 +261,104 @@ scheduler_events = {
 }
 ```
 
+### Microsoft Bookings
+
+Pull Bookings businesses from Microsoft:
+
+```text
+M365 Bookings Business list view
+→ Pull Bookings Businesses
+→ Select M365 Account
+```
+
+Create appointment via API:
+
+```text
+grx_m365.api.bookings.create_appointment(...)
+```
+
+The Bookings API uses Microsoft Bookings as the scheduling engine. GRX stores references and uses Microsoft Graph for creation, cancellation and service metadata.
+
 ---
 
-# Deleted Events
+## Deleted Outlook Events
 
 If an Outlook event disappears inside the configured sync window:
 
-* Event is marked as removed
-* Link is flagged cancelled
-* Frappe event remains visible for audit/history
-
-No hard delete by default.
+- The event link is flagged as cancelled
+- The Frappe Event remains visible for audit/history
+- No hard delete is performed by default
 
 ---
 
-# Shared Calendars
+## Shared Calendars
 
 Supported via:
 
-```text
-Target User
-Calendar Usage
-```
+- Target User
+- Calendar Usage
+- Calendar ID
 
-Examples:
+Supported usage types:
 
-* Personal
-* Shared
-* Team
-* Resource
+- Personal
+- Shared
+- Team
+- Resource
 
 ---
 
-# Contributing
+## Security Notes
 
-This app uses `pre-commit` for code formatting and linting.
+- OAuth tokens are stored in `M365 Account`
+- Calendar configuration is stored separately in `M365 Calendar Account`
+- Bookings configuration is stored separately in `M365 Bookings Business`
+- Scopes are requested dynamically based on enabled modules
+- The app follows a least-privilege approach where possible
+
+---
+
+## Roadmap
+
+Planned:
+
+- Outlook Push Sync: Frappe to Outlook
+- Delta Sync
+- Webhooks
+- Teams Meeting creation
+- Contacts Sync
+- Mail Sync
+- SharePoint Integration
+- GRX Service Case matching
+- Lead / CRM integration
+
+---
+
+## Contributing
 
 ```bash
 cd apps/grx_m365
 pre-commit install
 ```
 
-Configured tools:
+Recommended tools:
 
-* ruff
-* eslint
-* prettier
-* pyupgrade
-
----
-
-# CI
-
-Recommended GitHub Actions setup:
-
-* CI: install app + run tests on pushes to `develop`
-* Linters: Semgrep + pip-audit on pull requests
+- ruff
+- eslint
+- prettier
+- pyupgrade
 
 ---
 
-# Roadmap
-
-## Planned
-
-* Push sync (Frappe → Outlook)
-* Delta Sync
-* Webhooks
-* Teams Meeting support
-* SharePoint integration
-* Contact / Lead matching
-* Service Case linking
-
----
-
-# Why this App?
-
-Many Frappe users need Microsoft 365 integration.
-
-This app provides a clean, lightweight, open solution without heavy external middleware.
-
----
-
-# License
+## License
 
 MIT
 
 ---
 
-# Maintainer
+## Maintainer
+This project is open sourced to give the Frappe community a modern Microsoft 365 integration foundation.
 
-Built by onetoken.site / Klaus Grininger
+Built by **OneTokenSite / Klaus Grininger**
+
+https://onetoken.site

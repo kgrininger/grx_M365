@@ -7,11 +7,6 @@ from grx_m365.api.graph_client import get_me
 
 
 AUTHORITY_BASE = "https://login.microsoftonline.com"
-SCOPES = [
-    "offline_access",
-    "User.Read",
-    "Calendars.Read",
-]
 
 
 def get_settings():
@@ -35,6 +30,23 @@ def get_settings():
     return settings
 
 
+def get_scopes():
+    settings = get_settings()
+
+    scopes = [
+        "offline_access",
+        "User.Read",
+    ]
+
+    if settings.enable_calendar:
+        scopes.append("Calendars.Read")
+
+    if settings.enable_bookings:
+        scopes.append("BookingsAppointment.ReadWrite.All")
+
+    return scopes
+
+
 @frappe.whitelist()
 def connect():
     if frappe.session.user == "Guest":
@@ -47,7 +59,7 @@ def connect():
         "response_type": "code",
         "redirect_uri": settings.redirect_uri,
         "response_mode": "query",
-        "scope": " ".join(SCOPES),
+        "scope": " ".join(get_scopes()),
         "state": frappe.session.user,
         "prompt": "select_account",
     }
@@ -78,14 +90,14 @@ def callback(code=None, state=None, error=None, error_description=None):
 
     me = get_me(access_token)
 
-    account = upsert_calendar_account(
+    account = upsert_m365_account(
         user=state,
         token_data=token_data,
         me=me,
     )
 
     frappe.local.response["type"] = "redirect"
-    frappe.local.response["location"] = f"/app/m365-calendar-account/{account.name}"
+    frappe.local.response["location"] = f"/app/m365-account/{account.name}"
 
 
 def exchange_code_for_token(settings, code):
@@ -97,7 +109,7 @@ def exchange_code_for_token(settings, code):
         "grant_type": "authorization_code",
         "code": code,
         "redirect_uri": settings.redirect_uri,
-        "scope": " ".join(SCOPES),
+        "scope": " ".join(get_scopes()),
     }
 
     response = requests.post(token_url, data=data, timeout=20)
@@ -108,12 +120,17 @@ def exchange_code_for_token(settings, code):
     return response.json()
 
 
-def upsert_calendar_account(user, token_data, me):
+def upsert_m365_account(user, token_data, me):
     m365_email = me.get("mail") or me.get("userPrincipalName")
     display_name = me.get("displayName")
 
+    if not m365_email:
+        frappe.throw("Microsoft profile did not return an email/userPrincipalName.")
+
+    m365_email = str(m365_email or "").strip().lower()
+
     existing = frappe.db.get_value(
-        "M365 Calendar Account",
+        "M365 Account",
         {
             "user": user,
             "m365_email": m365_email,
@@ -122,28 +139,63 @@ def upsert_calendar_account(user, token_data, me):
     )
 
     if existing:
-        account = frappe.get_doc("M365 Calendar Account", existing)
+        account = frappe.get_doc("M365 Account", existing)
     else:
-        account = frappe.new_doc("M365 Calendar Account")
+        account = frappe.new_doc("M365 Account")
         account.user = user
         account.m365_email = m365_email
 
     account.enabled = 1
-    account.pull_enabled = 1
     account.display_name = display_name
-    account.calendar_id = account.calendar_id or "primary"
-    account.calendar_name = account.calendar_name or "Primary Calendar"
+    account.account_status = "Connected"
 
     account.access_token = token_data.get("access_token")
     account.refresh_token = token_data.get("refresh_token") or account.get_password("refresh_token")
     account.scope = token_data.get("scope")
+    account.last_error = ""
 
     expires_in = int(token_data.get("expires_in") or 3600)
     account.token_expires_at = add_to_date(now_datetime(), seconds=expires_in - 120)
 
-    account.sync_status = "Never Synced"
-
     account.save(ignore_permissions=True)
     frappe.db.commit()
 
+    ensure_default_calendar_account(account)
+
     return account
+
+
+def ensure_default_calendar_account(m365_account):
+    settings = frappe.get_single("M365 Settings")
+
+    if not settings.enable_calendar:
+        return None
+
+    existing = frappe.db.get_value(
+        "M365 Calendar Account",
+        {
+            "m365_account": m365_account.name,
+            "calendar_id": "primary",
+        },
+        "name",
+    )
+
+    if existing:
+        calendar = frappe.get_doc("M365 Calendar Account", existing)
+    else:
+        calendar = frappe.new_doc("M365 Calendar Account")
+        calendar.m365_account = m365_account.name
+        calendar.calendar_id = "primary"
+
+    calendar.enabled = 1
+    calendar.pull_enabled = 1
+    calendar.calendar_name = calendar.calendar_name or "Primary Calendar"
+    calendar.target_user = calendar.target_user or m365_account.user
+    calendar.calendar_usage = calendar.calendar_usage or "Personal"
+    calendar.show_in_office_hub = 1
+    calendar.sync_status = calendar.sync_status or "Never Synced"
+
+    calendar.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return calendar
