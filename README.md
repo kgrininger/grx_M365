@@ -1,3 +1,6 @@
+Production-ready Outlook calendar sync.
+Developer-ready Microsoft Bookings connector.
+
 # GRX M365
 
 > Modular Microsoft 365 integration for **Frappe / ERPNext**
@@ -8,7 +11,7 @@ Supports:
 
 - Outlook Calendar Sync
 - Shared Calendars
-- Microsoft Bookings
+- Includes Microsoft Bookings API connector
 - Future Microsoft integrations (Contacts, Mail, Teams, SharePoint)
 
 ---
@@ -24,7 +27,7 @@ Existing integrations are often:
 - limited
 - complex middleware solutions
 
-**GRX M365** aims to provide a clean, modern and open-source native integration.
+**GRX M365** focuses on practical Microsoft 365 integration for Frappe with minimal setup and direct Graph API usage.
 
 ---
 
@@ -48,7 +51,7 @@ Existing integrations are often:
 ### Microsoft Bookings
 
 - Sync Bookings Businesses
-- Sync Services
+- Read services metadata
 - Staff APIs
 - Appointment creation
 - Appointment cancellation
@@ -69,6 +72,11 @@ Microsoft 365
         ↓
 Frappe / ERPNext
 ```
+### Stability
+
+✅ Outlook Calendar: Production Ready  
+🟡 Bookings API: Beta / Integration Layer  
+🔵 Contacts / Mail / Teams: Planned
 
 ---
 
@@ -142,6 +150,11 @@ Used for:
 Sync history and diagnostics.
 
 ---
+
+Designed as modular connector layer:
+- Use standalone
+- Extend in custom apps
+- Integrate into GRX workflows
 
 ## Installation
 
@@ -344,6 +357,7 @@ MIT
 ---
 
 ## Maintainer
+This project is open sourced to give the Frappe community a modern Microsoft 365 integration foundation.
 
 Built by **OneTokenSite / Klaus Grininger**
 
