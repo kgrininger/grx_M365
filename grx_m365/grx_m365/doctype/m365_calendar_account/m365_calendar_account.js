@@ -21,9 +21,14 @@ frappe.ui.form.on("M365 Calendar Account", {
             });
         });
 
-        frm.add_custom_button("Reconnect Microsoft", function () {
-            window.location.href =
-                "/api/method/grx_m365.api.auth.connect";
-        });
+        if (frm.doc.m365_account) {
+            frm.add_custom_button("Open M365 Account", function () {
+                frappe.set_route(
+                    "Form",
+                    "M365 Account",
+                    frm.doc.m365_account
+                );
+            });
+        }
     }
 });
