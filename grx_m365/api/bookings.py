@@ -8,6 +8,7 @@ import requests
 from frappe import _
 
 from grx_m365.api.calendar_pull import get_valid_access_token
+from grx_m365.api.graph_client import graph_request_application
 
 
 GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0"
@@ -346,8 +347,7 @@ def get_staff_availability(
         "endDateTime": {"dateTime": end_date_time, "timeZone": timezone},
     }
 
-    availability = _graph_request(
-        account_doc,
+    availability = graph_request_application(
         "POST",
         f"/solutions/bookingBusinesses/{business_doc.business_id}/getStaffAvailability",
         payload=payload,

@@ -201,6 +201,18 @@ BookingsAppointment.ReadWrite.All
 offline_access
 ```
 
+Staff Availability / slot search:
+
+```text
+Bookings.Read.All (Application)
+```
+
+Admin consent is required for the Application permission. Microsoft Graph
+`getStaffAvailability` does not support User/Delegated tokens. `grx_m365`
+therefore uses `client_credentials` from M365 Settings for this call and caches
+the Application Access Token server-side via `frappe.cache()` only. The
+Application Token is not stored in DocTypes.
+
 Admin consent may be required depending on your Microsoft tenant policy.
 
 ### 3. Configure M365 Settings
