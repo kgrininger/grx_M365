@@ -55,6 +55,22 @@ def _get_business(bookings_business: str):
     return doc, account_doc
 
 
+def _get_business_for_application(bookings_business: str):
+    bookings_business = _s(bookings_business)
+    if not bookings_business:
+        frappe.throw(_("bookings_business is required."))
+
+    doc = frappe.get_doc("M365 Bookings Business", bookings_business)
+
+    if not doc.enabled:
+        frappe.throw(_("This M365 Bookings Business is disabled."))
+
+    if not doc.business_id:
+        frappe.throw(_("M365 Bookings Business has no business_id."))
+
+    return doc
+
+
 def _headers(account_doc) -> Dict[str, str]:
     access_token = get_valid_access_token(account_doc)
 
@@ -323,7 +339,7 @@ def get_staff_availability(
     end_date_time: str,
     timezone: Optional[str] = None,
 ) -> Dict[str, Any]:
-    business_doc, account_doc = _get_business(bookings_business)
+    business_doc = _get_business_for_application(bookings_business)
 
     start_date_time = _s(start_date_time)
     end_date_time = _s(end_date_time)
@@ -451,6 +467,94 @@ def create_appointment(
 
 
 @frappe.whitelist()
+def create_appointment_application(
+    bookings_business: str,
+    service_id: str,
+    start_date_time: str,
+    end_date_time: str,
+    customer_name: str,
+    customer_email: str,
+    customer_phone: Optional[str] = None,
+    staff_member_ids: Optional[Any] = None,
+    timezone: Optional[str] = None,
+    notes: Optional[str] = None,
+    custom_answers: Optional[Any] = None,
+) -> Dict[str, Any]:
+    business_doc = _get_business_for_application(bookings_business)
+
+    service_id = _s(service_id)
+    start_date_time = _s(start_date_time)
+    end_date_time = _s(end_date_time)
+    customer_name = _s(customer_name)
+    customer_email = _s(customer_email)
+    customer_phone = _s(customer_phone)
+    timezone = _s(timezone) or _s(business_doc.default_timezone) or "W. Europe Standard Time"
+
+    if not service_id:
+        frappe.throw(_("service_id is required."))
+    if not start_date_time or not end_date_time:
+        frappe.throw(_("start_date_time and end_date_time are required."))
+    if not customer_name:
+        frappe.throw(_("customer_name is required."))
+    if not customer_email:
+        frappe.throw(_("customer_email is required."))
+
+    if isinstance(staff_member_ids, str):
+        try:
+            staff_member_ids = json.loads(staff_member_ids)
+        except Exception:
+            staff_member_ids = [staff_member_ids]
+
+    if not isinstance(staff_member_ids, list):
+        staff_member_ids = []
+
+    answers = []
+    if custom_answers:
+        if isinstance(custom_answers, str):
+            try:
+                answers = json.loads(custom_answers)
+            except Exception:
+                answers = []
+        elif isinstance(custom_answers, list):
+            answers = custom_answers
+
+    payload: Dict[str, Any] = {
+        "@odata.type": "#microsoft.graph.bookingAppointment",
+        "serviceId": service_id,
+        "startDateTime": {"dateTime": start_date_time, "timeZone": timezone},
+        "endDateTime": {"dateTime": end_date_time, "timeZone": timezone},
+        "customers": [
+            {
+                "@odata.type": "#microsoft.graph.bookingCustomerInformation",
+                "name": customer_name,
+                "emailAddress": customer_email,
+                "phone": customer_phone,
+            }
+        ],
+    }
+
+    if staff_member_ids:
+        payload["staffMemberIds"] = staff_member_ids
+    if notes:
+        payload["customerNotes"] = _s(notes)
+    if answers:
+        payload["customQuestionAnswers"] = answers
+
+    appointment = graph_request_application(
+        "POST",
+        f"/solutions/bookingBusinesses/{business_doc.business_id}/appointments",
+        payload=payload,
+    )
+
+    return {
+        "ok": True,
+        "bookings_business": business_doc.name,
+        "business_id": business_doc.business_id,
+        "appointment": appointment,
+    }
+
+
+@frappe.whitelist()
 def cancel_appointment(
     bookings_business: str,
     appointment_id: str,
@@ -468,6 +572,37 @@ def cancel_appointment(
 
     result = _graph_request(
         account_doc,
+        "POST",
+        f"/solutions/bookingBusinesses/{business_doc.business_id}/appointments/{appointment_id}/cancel",
+        payload=payload,
+    )
+
+    return {
+        "ok": True,
+        "bookings_business": business_doc.name,
+        "business_id": business_doc.business_id,
+        "appointment_id": appointment_id,
+        "result": result,
+    }
+
+
+@frappe.whitelist()
+def cancel_appointment_application(
+    bookings_business: str,
+    appointment_id: str,
+    cancellation_message: Optional[str] = None,
+) -> Dict[str, Any]:
+    business_doc = _get_business_for_application(bookings_business)
+
+    appointment_id = _s(appointment_id)
+    if not appointment_id:
+        frappe.throw(_("appointment_id is required."))
+
+    payload = {}
+    if cancellation_message:
+        payload["cancellationMessage"] = _s(cancellation_message)
+
+    result = graph_request_application(
         "POST",
         f"/solutions/bookingBusinesses/{business_doc.business_id}/appointments/{appointment_id}/cancel",
         payload=payload,
