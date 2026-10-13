@@ -11,6 +11,22 @@ from grx_m365.api.auth import AUTHORITY_BASE, get_scopes
 GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0"
 
 
+def _save_imported_event(doc, *, is_new=False):
+    """Mark only this internal Event save for the GRX Event policy hook."""
+    previous = getattr(frappe.flags, "m365_event_sync", None)
+    frappe.flags.m365_event_sync = True
+    try:
+        if is_new:
+            doc.insert(ignore_permissions=True)
+        else:
+            doc.save(ignore_permissions=True)
+    finally:
+        if previous is None:
+            frappe.flags.pop("m365_event_sync", None)
+        else:
+            frappe.flags.m365_event_sync = previous
+
+
 @frappe.whitelist()
 def sync_account(account):
     if frappe.session.user == "Guest":
@@ -253,7 +269,7 @@ def upsert_outlook_event(account_doc, outlook_event):
 
         frappe_event = frappe.get_doc("Event", link_doc.frappe_event)
         update_frappe_event(frappe_event, outlook_event, account_doc)
-        frappe_event.save(ignore_permissions=True)
+        _save_imported_event(frappe_event)
 
         resolve_grx_event_context(frappe_event.name)
 
@@ -264,7 +280,7 @@ def upsert_outlook_event(account_doc, outlook_event):
 
     frappe_event = frappe.new_doc("Event")
     update_frappe_event(frappe_event, outlook_event, account_doc)
-    frappe_event.insert(ignore_permissions=True)
+    _save_imported_event(frappe_event, is_new=True)
 
     resolve_grx_event_context(frappe_event.name)
 
