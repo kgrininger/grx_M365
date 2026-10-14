@@ -363,7 +363,7 @@ def mark_removed_link(link):
         if frappe_event.meta.has_field("status"):
             frappe_event.status = "Closed"
 
-        frappe_event.save(ignore_permissions=True)
+        _save_imported_event(frappe_event)
 
 
 def update_frappe_event(frappe_event, outlook_event, account_doc):
