@@ -27,12 +27,18 @@ def _save_imported_event(doc, *, is_new=False):
             frappe.flags.m365_event_sync = previous
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def sync_account(account):
     if frappe.session.user == "Guest":
         frappe.throw("Please login.")
 
     account_doc = frappe.get_doc("M365 Calendar Account", account)
+    # Loading a document by name is not authorization. This endpoint starts a
+    # privileged import, writes Events with ignore_permissions and commits sync
+    # state, so require the configured account's effective standard write
+    # permission before creating a log, refreshing credentials or making a
+    # provider request.
+    account_doc.check_permission("write")
 
     if not account_doc.enabled or not account_doc.pull_enabled:
         frappe.throw("This M365 Calendar Account is disabled or pull sync is disabled.")
