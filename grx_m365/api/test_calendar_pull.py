@@ -12,6 +12,9 @@ class TestCalendarPullEventPolicy(FrappeTestCase):
 		self.savepoint = "calendar_pull_auth_" + frappe.generate_hash(length=10)
 		frappe.db.savepoint(self.savepoint)
 		frappe.set_user("Administrator")
+		if not frappe.db.exists("Role", "M365 Calendar Test Staff"):
+			frappe.get_doc({"doctype": "Role", "role_name": "M365 Calendar Test Staff",
+				"desk_access": 1, "is_custom": 1}).insert(ignore_permissions=True)
 
 	def tearDown(self):
 		frappe.db.rollback(save_point=self.savepoint)
@@ -21,6 +24,7 @@ class TestCalendarPullEventPolicy(FrappeTestCase):
 		user = frappe.get_doc({
 			"doctype": "User", "email": frappe.generate_hash(length=12) + "@example.test",
 			"first_name": "Calendar authorization test", "user_type": "System User",
+			"roles": [{"role": "M365 Calendar Test Staff"}],
 		}).insert(ignore_permissions=True)
 		m365_user = frappe.get_doc({
 			"doctype": "M365 Account", "user": user.name,
@@ -56,6 +60,8 @@ class TestCalendarPullEventPolicy(FrappeTestCase):
 
 	def test_import_save_sets_and_restores_internal_policy_flag(self):
 		doc = Mock()
+		doc.owner = None
+		doc.name = "EV-MOCK-IMPORT"
 		previous = getattr(frappe.flags, "m365_event_sync", None)
 
 		def insert(**kwargs):
@@ -92,3 +98,42 @@ class TestCalendarPullEventPolicy(FrappeTestCase):
 		save_adapter.assert_called_once_with(frappe_event)
 		frappe_event.save.assert_not_called()
 		self.assertTrue(link_doc.is_cancelled)
+
+	def test_actual_upsert_update_and_removal_pass_event_validation(self):
+		user, account = self._account(enabled=0)
+		account_doc = frappe._dict(name=account.name, target_user=user.name)
+		remote = {
+			"id": "variant-b-" + frappe.generate_hash(length=12),
+			"subject": "Imported plan", "start": {"dateTime": "2026-10-20T09:00:00"},
+			"end": {"dateTime": "2026-10-20T10:00:00"}, "attendees": [],
+		}
+		probe = frappe.new_doc("Event")
+		calendar_pull.update_frappe_event(probe, remote, account_doc)
+		self.assertEqual(probe.owner, user.name)
+		with patch.object(calendar_pull, "resolve_grx_event_context"):
+			self.assertEqual(calendar_pull.upsert_outlook_event(account_doc, remote), "created")
+			link_name = frappe.db.get_value("M365 Event Link", {
+				"calendar_account": account.name, "m365_event_id": remote["id"],
+			}, "name")
+			link = frappe.get_doc("M365 Event Link", link_name)
+			event = frappe.get_doc("Event", link.frappe_event)
+			self.assertEqual(event.event_type, "Private")
+			self.assertEqual(event.owner, user.name)
+			contact = frappe.get_doc({"doctype": "Contact", "first_name": "Imported Event Context"}).insert(ignore_permissions=True)
+			frappe.share.add_docshare("Contact", contact.name, user=user.name, read=1, write=0, share=0)
+			frappe.set_user(user.name)
+			imported_version = str(event.modified)
+			from grx_fieldservice.api import event_dispatch
+			assigned = event_dispatch.event_update(event.name, imported_version, {
+				"reference_doctype": "Contact", "reference_docname": contact.name,
+			})
+			self.assertEqual(assigned["event"]["context"]["name"], contact.name)
+			with self.assertRaises(frappe.PermissionError):
+				event_dispatch.event_update(event.name, assigned["event"]["modified"], {"subject": "Forbidden plan change"})
+			frappe.set_user("Administrator")
+			remote["subject"] = "Updated imported plan"
+			self.assertEqual(calendar_pull.upsert_outlook_event(account_doc, remote), "updated")
+			self.assertEqual(frappe.db.get_value("Event", event.name, "subject"), "Updated imported plan")
+			calendar_pull.mark_removed_link(link.as_dict())
+		self.assertEqual(frappe.db.get_value("Event", event.name, "status"), "Closed")
+		self.assertFalse(getattr(frappe.flags, "m365_event_sync", False))

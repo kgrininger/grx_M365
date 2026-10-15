@@ -17,7 +17,14 @@ def _save_imported_event(doc, *, is_new=False):
     frappe.flags.m365_event_sync = True
     try:
         if is_new:
+            intended_owner = doc.owner
             doc.insert(ignore_permissions=True)
+            # Frappe stamps a new document's owner with the current sync user
+            # during insert. Imported Private Events belong to their configured
+            # target user, so restore only this adapter-owned field afterwards.
+            if intended_owner and frappe.db.get_value("Event", doc.name, "owner") != intended_owner:
+                frappe.db.set_value("Event", doc.name, "owner", intended_owner, update_modified=False)
+                doc.owner = intended_owner
         else:
             doc.save(ignore_permissions=True)
     finally:
